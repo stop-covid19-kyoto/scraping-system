@@ -2,7 +2,7 @@ name: Deploy new data
 
 on:
   schedule:
-    - cron: "47,*/60 * * * *"
+    - cron: "50 * * * *"
 
 jobs:
   build:
