@@ -354,13 +354,11 @@ def __main__():
               )
             )
             last_update = (
-              str(date.year).zfill(4) + "-" +
-              str(date.month).zfill(2) + "-" +
-              str(date.day).zfill(2) + "T" +
+              str(date.year).zfill(4) + "/" +
+              str(date.month).zfill(2) + "/" +
+              str(date.day).zfill(2) + " " +
               str(date.hour).zfill(2) + ":" +
-              str(date.minute).zfill(2) + ":" +
-              str(date.second).zfill(2) +
-              ".000Z"
+              str(date.minute).zfill(2)
             )
             hoge = False
             break
