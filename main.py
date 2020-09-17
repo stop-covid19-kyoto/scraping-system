@@ -201,7 +201,8 @@ class data_generator:
             },
           ]
         }
-      ]
+      ],
+      "last_update": None
     }
 
   def get_inspctions_summary(self, sheet):
@@ -402,11 +403,9 @@ def __main__():
       f, indent=4, ensure_ascii=False)
 
   with open('./data/main_summary.json', 'w') as f:
+    main_summary["last_update"] = last_update
     json.dump(
-      {
-        "data": main_summary,
-        "last_update": last_update
-      },
+      main_summary,
       f, indent=4, ensure_ascii=False)
 
   with open('./data/inspections_summary.json', 'w') as f:
