@@ -385,7 +385,7 @@ def __main__():
 
   inspections_summary = data_gen.get_inspctions_summary(pcr_sheet)
 
-  with open('patients.json', 'w') as f:
+  with open('./data/patients.json', 'w') as f:
     json.dump(
       {
         "data": patients_data,
@@ -393,7 +393,7 @@ def __main__():
       },
       f, indent=4, ensure_ascii=False)
 
-  with open('patients_summary.json', 'w') as f:
+  with open('./data/patients_summary.json', 'w') as f:
     json.dump(
       {
         "data": patients_summary,
@@ -401,7 +401,7 @@ def __main__():
       },
       f, indent=4, ensure_ascii=False)
 
-  with open('main_summary.json', 'w') as f:
+  with open('./data/main_summary.json', 'w') as f:
     json.dump(
       {
         "data": main_summary,
@@ -409,7 +409,7 @@ def __main__():
       },
       f, indent=4, ensure_ascii=False)
 
-  with open('inspections_summary.json', 'w') as f:
+  with open('./data/inspections_summary.json', 'w') as f:
     json.dump(
       {
         "data": inspections_summary,
@@ -417,7 +417,7 @@ def __main__():
       },
       f, indent=4, ensure_ascii=False)
 
-  with open('last_update.json', 'w') as f:
+  with open('./data/last_update.json', 'w') as f:
     json.dump(
       {
         "last_update": last_update
