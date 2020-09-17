@@ -8,298 +8,424 @@ import gmailrestwrapper
 import base64
 import sys
 
-client_id = (sys.argv)[1]
-client_secret = (sys.argv)[2]
-refresh_token = (sys.argv)[3]
-kyoto_addr = (sys.argv)[4]
-my_addr = (sys.argv)[5]
+class data_generator:
+  # datetime型のオブジェクトから短い日付を返す
+  def get_shorted_date(self, datetime_obj):
+    return (
+      str(datetime_obj.year).zfill(4)
+      + "-" + 
+      str(datetime_obj.month).zfill(2)
+      + "-" + 
+      str(datetime_obj.day).zfill(2)
+    )
 
-param = {
-  "client_id": client_id,
-  "client_secret": client_secret,
-  "refresh_token": refresh_token,
-  "grant_type": "refresh_token"
-}
+  # 陽性者の一覧を生成
+  def get_patients_data(self, sheet):
+    patients_data = []
+    for i in range(sheet.max_row) :
 
-today = datetime.now()
-
-token = gmailrestwrapper.get_token(param)
-msg_list = gmailrestwrapper.get_message_list(
-  token,
-  query=(
-    "from:" + 
-    kyoto_addr + 
-    " OR from:" + 
-    my_addr + 
-    " after:" +
-    str(today.year).zfill(4) + "/" + str(today.month).zfill(2) + "/" + str(today.day).zfill(2) +
-    " before:" +
-    str(today.year).zfill(4) + "/" + str(today.month).zfill(2) + "/" + str(today.day + 1).zfill(2)
-    ),
-  maxResults=20)
-
-last_mail_date = None
-
-if ("messages" in msg_list.keys()) == False:
-  exit()
-else:
-  for msg_id_in_list in msg_list["messages"]:
-    msg_id = msg_id_in_list["id"]
-    msg = gmailrestwrapper.get_message(token, msg_id)
-    date = int(int(msg["internalDate"]) / 1000)
-    date_datetime = datetime.utcfromtimestamp(date) + timedelta(hours=9)
-
-  # メールから xlsx ファイルを取り出す
-  for payload in msg["payload"]["parts"]:
-    if (last_mail_date == None):
-      last_mail_date = date_datetime
-    elif date_datetime >= last_mail_date:
-      last_mail_date = date_datetime
-
-    if ("data.xlsx" in payload["filename"]) and (len(payload["filename"]) == 17) and (date_datetime >= last_mail_date):
-      last_update = date_datetime
-      last_update = (
-        str(last_update.year).zfill(4) + "-" +
-        str(last_update.month).zfill(2) + "-" +
-        str(last_update.day).zfill(2) + "T" +
-        str(last_update.hour).zfill(2) + ":" +
-        str(last_update.minute).zfill(2) + ":" +
-        str(last_update.second).zfill(2) +
-        ".000Z"
+      date = (
+        era.reiwa_to_datetime(
+          sheet.cell(
+            row=sheet.max_row - i,
+            column=2
+          ).value
+        ) + timedelta(hours=8)
       )
-      filename = payload["filename"]
-      spread_data = base64.urlsafe_b64decode((json.loads(gmailrestwrapper.get_attachment(token, msg_id, payload["body"]["attachmentId"])))["data"].encode("ascii"))
 
+      shorted_date = self.get_shorted_date(date)
 
+      patient = str(
+        sheet.cell(
+          row=sheet.max_row - i,
+          column=1
+        ).value
+      ).replace("例目", "")
 
-# exit()
+      patient_number = (
+        int(patient) if (patient == "-") == False else None
+      )
+      
+      patient_address = (
+        sheet.cell(
+          row=sheet.max_row - i,
+          column=5
+        ).value
+      )
 
-# スプレッドシートを開く
-spreadsheet = openpyxl.load_workbook(filename=BytesIO(spread_data))
+      patient_age_data = (
+        str(
+          sheet.cell(
+            row=sheet.max_row - i,
+            column=3
+          ).value
+        )
+      )
 
-# シートの内容を代入
-patients_sheet = spreadsheet['陽性者の属性']
-pcr_sheet = spreadsheet['PCR検査件数']
-news_sheet = spreadsheet['最新の情報']
+      if patient_age_data == "-" :
+        patient_age = ""
+      elif "以上" in patient_age_data :
+        patient_age = patient_age_data.replace("以上", "歳以上")
+      elif patient_age_data == "園児" :
+        patient_age = patient_age_data
+      else :
+        patient_age = patient_age_data + "代"
 
-# 変数を初期化
-patients_data = {
-  "data": [],
-  "last_update": last_update
-}
+      patient_gender_data = (
+        sheet.cell(
+          row=sheet.max_row - i,
+          column=4
+        ).value
+      )
 
-patients_data_converted = {
-  "data": [],
-  "last_update": last_update
-}
+      if patient_gender_data == "-" :
+        patient_gender = ""
+      else :
+        patient_gender = patient_gender_data
 
-patients_summary = {
-  "data": [],
-  "last_update": last_update
-}
+      # 退院日
+      left_hospital = (
+        (
+          sheet.cell(
+            row=sheet.max_row - i,
+            column=6
+          ).value
+        ) if (
+          sheet.cell(
+            row=sheet.max_row - i,
+            column=6
+          ).value
+        ) != None else None
+      )
 
-inspections_summary = {
-  "data": [],
-  "last_update": last_update
-}
-
-pcr_data = {}
-news_data = {}
-
-
-
-
-patient_count = 0
-patients_count_day = 0
-
-recent_patient_date = None
-
-zero_days_sum = 0
-
-
-# 感染者のデータを生成
-for i in range(patients_sheet.max_row) :
-  date = (era.reiwa_to_datetime(patients_sheet.cell(row=patients_sheet.max_row - i, column=2).value)) + timedelta(hours=8)
-  date_shorted = str(date.year).zfill(4) + "-" + str(date.month).zfill(2) + "-" + str(date.day).zfill(2)
-
-  number_data = str(patients_sheet.cell(row=patients_sheet.max_row - i, column=1).value).replace("例目", "")
-  number = int(number_data) if (number_data == "-") == False else None
-
-  address = patients_sheet.cell(row=patients_sheet.max_row - i, column=5).value
-
-  age_data = str(patients_sheet.cell(row=patients_sheet.max_row - i, column=3).value)
-  if age_data == "-" :
-    age = ""
-  elif "以上" in age_data :
-    age = age_data.replace("以上", "歳以上")
-  elif age_data == "園児" :
-    age = age_data
-  else :
-    age = age_data + "代"
-
-  gender_data = patients_sheet.cell(row=patients_sheet.max_row - i, column=4).value
-  if gender_data == "-" :
-    gender = ""
-  else :
-    gender = gender_data
-
-  left_hospital_data = patients_sheet.cell(row=patients_sheet.max_row - i, column=6).value
-  left_hospital = left_hospital_data if left_hospital_data != None else None
-
-  patients_data["data"].append(
-    {
-      "No": number,
-      "リリース日": date_shorted + "T08:00:00.000Z",
-      "居住地": address,
-      "年代と性別": age + gender,
-      "退院": left_hospital,
-      "date": date_shorted,
-    }
-  )
-
-# 患者の一覧を日付でソート
-patients_sorted = sorted(patients_data["data"], key=lambda x: datetime.strptime(x["リリース日"], "%Y-%m-%dT%H:%M:%S.000Z"))
-
-# ソートした患者の一覧をもとに日毎の患者の小計を計算
-for i in range(len(patients_sorted)) :
-
-  date = datetime.strptime(patients_sorted[i]["リリース日"], "%Y-%m-%dT%H:%M:%S.000Z")
-
-  if i == 0 :
-    recent_patient_date = date
-
-  if (recent_patient_date != date) :
-    patients_summary["data"].append(
-      {
-        "日付": 
-          str(recent_patient_date.year).zfill(4) + "-" + 
-          str(recent_patient_date.month).zfill(2) + "-" +
-          str(recent_patient_date.day).zfill(2) + "T08:00:00.000Z",
-        "小計": patient_count
-      }
-    )
-    patient_count = 0
- 
-  patient_count += 1
-
-  if i + 1 == patients_sheet.max_row :
-    patients_summary["data"].append(
-      {
-        "日付": 
-          str(date.year).zfill(4) + "-" + 
-          str(date.month).zfill(2) + "-" +
-          str(date.day).zfill(2) + "T08:00:00.000Z",
-        "小計": patient_count
-      }
-    )
-
-  zero_days = (date - recent_patient_date).days
-
-  if zero_days >= 2 :
-    for j in range(zero_days - 1) :
-      zero_date = recent_patient_date + timedelta(days=j+1)
-      patients_summary["data"].append(
+      patients_data.append(
         {
-          "日付": str(zero_date.year).zfill(4) + "-" + str(zero_date.month).zfill(2) + "-" + str(zero_date.day).zfill(2) + "T08:00:00.000Z",
-          "小計": 0
+          "No": patient_number,
+          "リリース日": shorted_date + "T08:00:00.000Z",
+          "居住地": patient_address,
+          "年代と性別": patient_age + patient_gender,
+          "退院": left_hospital,
+          "date": shorted_date,
         }
       )
 
-  recent_patient_date = date
+    return patients_data
 
+  def get_patients_summary(self, patients):
+    patient_count = 0
 
-# PCR 検査件数の小計を計算
+    patients_summary = []
 
-main_summary = {
-  "attr": "検査実施人数",
-  "value": pcr_sheet.cell(row=1, column=2).value,
-  "children": [
-    {
-      "attr": "陽性患者数",
-      "value": pcr_sheet.cell(row=1, column=3).value,
-      "children": [
-        {
-          "attr": "入院中・入院調整中",
-          "value": pcr_sheet.cell(row=1, column=5).value
-        },
-        {
-          "attr": "宿泊施設",
-          "value": pcr_sheet.cell(row=1, column=7).value
-        },
-        {
-          "attr": "自宅療養",
-          "value": pcr_sheet.cell(row=1, column=8).value
-        },
-        {
-          "attr": "死亡",
-          "value": pcr_sheet.cell(row=1, column=9).value
-        },
-        {
-          "attr": "退院・解除",
-          "value": pcr_sheet.cell(row=1, column=4).value
-        },
-      ]
-    }
-  ],
-  "last_update": last_update
-}
-
-last_inspected = 0
-
-# PCR 検査実施数の日毎の集計
-for i in range(pcr_sheet.max_row) :
-  
-  date = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=1).value + timedelta(hours=8)
-  inspected = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=2).value
-
-  if inspected != None :
-    inspections_summary["data"].append(
-      {
-        "日付": 
-          str(date.year).zfill(4) + "-" + 
-          str(date.month).zfill(2) + "-" +
-          str(date.day).zfill(2) + "T08:00:00.000Z",
-        "小計": inspected - last_inspected 
-      }
+    patients_sorted = sorted(
+        patients, 
+        key=lambda x: datetime.strptime(x["リリース日"], "%Y-%m-%dT%H:%M:%S.000Z")
     )
 
-  if inspected != None:
-    last_inspected = inspected
+    for i in range(len(patients_sorted)) :
+      date = datetime.strptime(
+        patients_sorted[i]["リリース日"], "%Y-%m-%dT%H:%M:%S.000Z"
+      )
 
-del inspections_summary["data"][0]
+      if i == 0 :
+        recent_patient_date = date
 
-for i in range(pcr_sheet.max_row) :
-  date = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=1).value + timedelta(hours=8)
-  inspected = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=2).value
-  patients = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=3).value
-  left_hospital = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=4).value
-  in_hospital = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=5).value
-  seriously_patients = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=6).value
-  in_hotel = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=7).value
-  in_home = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=8).value
-  died = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=9).value
-  adjusting = pcr_sheet.cell(row=pcr_sheet.max_row - i, column=10).value
-  # print(date, inspected, patients, left_hospital, in_hospital, seriously_patients, in_hotel, in_home, died, adjusting)
+      if (recent_patient_date != date) :
+        patients_summary.append(
+          {
+            "日付": 
+              str(recent_patient_date.year).zfill(4) + "-" + 
+              str(recent_patient_date.month).zfill(2) + "-" +
+              str(recent_patient_date.day).zfill(2) + "T08:00:00.000Z",
+            "小計": patient_count
+          }
+        )
+        patient_count = 0
 
-#print(patients_sorted)
+      patient_count += 1
 
-with open('patients.json', 'w') as f:
-  json.dump(patients_data, f, indent=4, ensure_ascii=False)
+      if i + 1 == len(patients) :
+        patients_summary.append(
+          {
+            "日付": 
+              str(date.year).zfill(4) + "-" + 
+              str(date.month).zfill(2) + "-" +
+              str(date.day).zfill(2) + "T08:00:00.000Z",
+            "小計": patient_count
+          }
+        )
 
-with open('patients_summary.json', 'w') as f:
-  json.dump(patients_summary, f, indent=4, ensure_ascii=False)
+      zero_days = (date - recent_patient_date).days
 
-with open('last_update.json', 'w') as f:
-  json.dump(
-    {
-      "last_update": last_update
-    },
-    f, indent=4, ensure_ascii=False
+      if zero_days >= 2 :
+        for j in range(zero_days - 1) :
+          zero_date = recent_patient_date + timedelta(days=j+1)
+          patients_summary.append(
+            {
+              "日付": str(zero_date.year).zfill(4) + "-" + str(zero_date.month).zfill(2) + "-" + str(zero_date.day).zfill(2) + "T08:00:00.000Z",
+              "小計": 0
+            }
+          )
+
+      recent_patient_date = date
+
+    return patients_summary
+
+  def get_today_inspctions_summary(self, sheet):
+    return {
+      "attr": "検査実施人数",
+      "value": sheet.cell(row=1, column=2).value,
+      "children": [
+        {
+          "attr": "陽性患者数",
+          "value": sheet.cell(row=1, column=3).value,
+          "children": [
+            {
+              "attr": "入院中・入院調整中",
+              "value": sheet.cell(row=1, column=5).value
+            },
+            {
+              "attr": "宿泊施設",
+              "value": sheet.cell(row=1, column=7).value
+            },
+            {
+              "attr": "自宅療養",
+              "value": sheet.cell(row=1, column=8).value
+            },
+            {
+              "attr": "死亡",
+              "value": sheet.cell(row=1, column=9).value
+            },
+            {
+              "attr": "退院・解除",
+              "value": sheet.cell(row=1, column=4).value
+            },
+          ]
+        }
+      ]
+    }
+
+  def get_inspctions_summary(self, sheet):
+    inspections_summary = []
+    last_inspected = 0
+
+    for i in range(sheet.max_row):
+      inspctions_date = (
+        sheet.cell(
+          row=sheet.max_row - i,
+          column=1
+        ).value + timedelta(hours=8)
+      )
+
+      inspected = (
+        sheet.cell(
+          row=sheet.max_row - i,
+          column=2
+        ).value
+      )
+
+      if inspected != None:
+        inspections_summary.append(
+          {
+            "日付": 
+              str(inspctions_date.year).zfill(4) + "-" + 
+              str(inspctions_date.month).zfill(2) + "-" +
+              str(inspctions_date.day).zfill(2) + "T08:00:00.000Z",
+            "小計": inspected - last_inspected 
+          }
+        )
+
+      if inspected != None:
+        last_inspected = inspected
+
+    del inspections_summary[0]
+
+    return inspections_summary
+
+class mail_manager:
+  def __init__(self, token):
+    self.token = token
+
+  def get_message_list(self, addresses: list, date, max_results: int):
+    query_addresses = "from:"
+    for i in range(len(addresses)):
+      if i >= 1:
+        query_addresses += "OR from:"
+      query_addresses += addresses[i] + " "
+
+    msg_list = gmailrestwrapper.get_message_list(
+      self.token,
+      query=(
+        query_addresses + 
+        " after:" +
+        str(date.year).zfill(4) + "/" + str(date.month).zfill(2) + "/" + str(date.day).zfill(2) +
+        " before:" +
+        str(date.year).zfill(4) + "/" + str(date.month).zfill(2) + "/" + str(date.day + 1).zfill(2)
+      ),
+      maxResults=max_results
+    )
+
+    return (
+      msg_list["messages"]
+      if "messages" in msg_list.keys()
+      else None
+    )
+
+  def get_message(self, msg_id):
+    msg = gmailrestwrapper.get_message(self.token, msg_id)
+    date = (
+      datetime.utcfromtimestamp(
+        int(int(msg["internalDate"]) / 1000)
+      ) + timedelta(hours=9)
+    )
+
+    return {
+      "data": msg,
+      "date": str(date)
+    }
+
+
+
+def __main__():
+  data_gen = data_generator()
+
+  param = {
+    "client_id": (sys.argv)[1],
+    "client_secret": (sys.argv)[2],
+    "refresh_token": (sys.argv)[3],
+    "grant_type": "refresh_token"
+  }
+
+  # トークンを生成
+  token = gmailrestwrapper.get_token(param)
+
+  mailman = mail_manager(token)
+
+  dt = datetime(2020, 9, 22, 0, 59, 0)
+
+  hoge = True
+  while hoge:
+    msg_list = mailman.get_message_list(
+      addresses=[
+        (sys.argv)[4],
+        (sys.argv)[5]
+      ],
+      date=dt,
+      max_results=20
+    )
+
+    last_date = None
+  
+    if msg_list != None:
+      for msg_id in msg_list:
+        msg = (
+            mailman.get_message(
+            msg_id["id"]
+          )
+        )
+
+        for payload in msg["data"]["payload"]["parts"]:
+          date = datetime.strptime(msg["date"], "%Y-%m-%d %H:%M:%S")
+
+          if last_date == None:
+            last_date = date
+          elif date >= last_date:
+            last_date = date
+
+          if (
+            ("data.xlsx" in payload["filename"])
+            and
+            (len(payload["filename"]) == 17)
+            and
+            (date >= last_date)
+          ):
+            filename = payload["filename"]
+            spread_data = (
+              base64.urlsafe_b64decode(
+                (
+                  json.loads(
+                    gmailrestwrapper.get_attachment(
+                      token,
+                      msg_id["id"],
+                      payload["body"]["attachmentId"]
+                    )
+                  )
+                )["data"].encode("ascii")
+              )
+            )
+            last_update = (
+              str(date.year).zfill(4) + "-" +
+              str(date.month).zfill(2) + "-" +
+              str(date.day).zfill(2) + "T" +
+              str(date.hour).zfill(2) + ":" +
+              str(date.minute).zfill(2) + ":" +
+              str(date.second).zfill(2) +
+              ".000Z"
+            )
+            hoge = False
+            break
+        else:
+          continue
+        break
+    else:
+      dt = dt + timedelta(days=-1)
+
+  spreadsheet = openpyxl.load_workbook(
+    filename=BytesIO(spread_data)
   )
 
-with open('main_summary.json', 'w') as f:
-  json.dump(main_summary, f, indent=4, ensure_ascii=False)
+  patients_sheet = spreadsheet['陽性者の属性']
+  pcr_sheet = spreadsheet['PCR検査件数']
+  news_sheet = spreadsheet['最新の情報']
 
-with open('inspections_summary.json', 'w') as f:
-  json.dump(inspections_summary, f, indent=4, ensure_ascii=False)
+  patients_data = data_gen.get_patients_data(patients_sheet)
 
+  patients_summary = data_gen.get_patients_summary(patients_data)
+
+  main_summary = data_gen.get_today_inspctions_summary(pcr_sheet)
+
+  inspections_summary = data_gen.get_inspctions_summary(pcr_sheet)
+
+  with open('patients.json', 'w') as f:
+    json.dump(
+      {
+        "data": patients_data,
+        "last_update": last_update
+      },
+      f, indent=4, ensure_ascii=False)
+
+  with open('patients_summary.json', 'w') as f:
+    json.dump(
+      {
+        "data": patients_summary,
+        "last_update": last_update
+      },
+      f, indent=4, ensure_ascii=False)
+
+  with open('main_summary.json', 'w') as f:
+    json.dump(
+      {
+        "data": main_summary,
+        "last_update": last_update
+      },
+      f, indent=4, ensure_ascii=False)
+
+  with open('inspections_summary.json', 'w') as f:
+    json.dump(
+      {
+        "data": inspections_summary,
+        "last_update": last_update
+      },
+      f, indent=4, ensure_ascii=False)
+
+  with open('last_update.json', 'w') as f:
+    json.dump(
+      {
+        "last_update": last_update
+      },
+      f, indent=4, ensure_ascii=False
+    )
+
+  
+  
+
+__main__()
