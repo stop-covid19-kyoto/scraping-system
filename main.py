@@ -66,7 +66,7 @@ class data_generator:
         patient_age = ""
       elif "以上" in patient_age_data :
         patient_age = patient_age_data.replace("以上", "歳以上")
-      elif patient_age_data == "園児" :
+      elif (patient_age_data == "園児") or ("未満" in patient_age_data) :
         patient_age = patient_age_data
       else :
         patient_age = patient_age_data + "代"
