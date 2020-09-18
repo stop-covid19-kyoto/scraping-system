@@ -238,8 +238,6 @@ class data_generator:
       if inspected != None:
         last_inspected = inspected
 
-    del inspections_summary[0]
-
     return inspections_summary
 
 class mail_manager:
