@@ -288,6 +288,7 @@ class mail_manager:
     msg_list = gmailrestwrapper.get_message_list(
       self.token,
       query=(
+        # "NOT in:draft " +
         query_addresses + 
         " after:" +
         str(date.year).zfill(4) + "/" + str(date.month).zfill(2) + "/" + str(date.day).zfill(2) +
@@ -351,50 +352,50 @@ def __main__():
     if msg_list != None:
       for msg_id in msg_list:
         msg = (
-            mailman.get_message(
+          mailman.get_message(
             msg_id["id"]
           )
         )
+        if ("parts" in msg["data"]["payload"].keys()) == True:
+          for payload in msg["data"]["payload"]["parts"]:
+            date = datetime.strptime(msg["date"], "%Y-%m-%d %H:%M:%S")
 
-        for payload in msg["data"]["payload"]["parts"]:
-          date = datetime.strptime(msg["date"], "%Y-%m-%d %H:%M:%S")
+            if last_date == None:
+              last_date = date
+            elif date >= last_date:
+              last_date = date
 
-          if last_date == None:
-            last_date = date
-          elif date >= last_date:
-            last_date = date
-
-          if (
-            ("data.xlsx" in payload["filename"])
-            and
-            (len(payload["filename"]) == 17)
-          ):
-            filename = payload["filename"]
-            spread_data = (
-              base64.urlsafe_b64decode(
-                (
-                  json.loads(
-                    gmailrestwrapper.get_attachment(
-                      token,
-                      msg_id["id"],
-                      payload["body"]["attachmentId"]
+            if (
+              ("data.xlsx" in payload["filename"])
+              and
+              (len(payload["filename"]) == 17)
+            ):
+              filename = payload["filename"]
+              spread_data = (
+                base64.urlsafe_b64decode(
+                  (
+                    json.loads(
+                      gmailrestwrapper.get_attachment(
+                        token,
+                        msg_id["id"],
+                        payload["body"]["attachmentId"]
+                      )
                     )
-                  )
-                )["data"].encode("ascii")
+                  )["data"].encode("ascii")
+                )
               )
-            )
-            last_update = (
-              str(date.year).zfill(4) + "/" +
-              str(date.month).zfill(2) + "/" +
-              str(date.day).zfill(2) + " " +
-              str(date.hour).zfill(2) + ":" +
-              str(date.minute).zfill(2)
-            )
-            hoge = False
-            break
-        else:
-          continue
-        break
+              last_update = (
+                str(date.year).zfill(4) + "/" +
+                str(date.month).zfill(2) + "/" +
+                str(date.day).zfill(2) + " " +
+                str(date.hour).zfill(2) + ":" +
+                str(date.minute).zfill(2)
+              )
+              hoge = False
+              break
+          else:
+            continue
+          break
     else:
       dt = dt + timedelta(days=-1)
 
