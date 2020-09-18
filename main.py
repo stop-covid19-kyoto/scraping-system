@@ -298,8 +298,6 @@ def __main__():
 
   # トークンを生成
   token = gmailrestwrapper.get_token(param)
-  print("a")
-  print(token)
 
   mailman = mail_manager(token)
 
@@ -307,8 +305,6 @@ def __main__():
 
   hoge = True
   while hoge:
-    print(dt)
-    print("b")
     msg_list = mailman.get_message_list(
       addresses=[
         (sys.argv)[4],
@@ -322,8 +318,6 @@ def __main__():
   
     if msg_list != None:
       for msg_id in msg_list:
-        print("c")
-        print(msg_id["id"])
         msg = (
             mailman.get_message(
             msg_id["id"]
@@ -344,7 +338,6 @@ def __main__():
             (len(payload["filename"]) == 17)
           ):
             filename = payload["filename"]
-            print("x")
             spread_data = (
               base64.urlsafe_b64decode(
                 (
