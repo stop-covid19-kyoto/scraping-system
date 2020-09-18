@@ -240,6 +240,40 @@ class data_generator:
 
     return inspections_summary
 
+  def get_news(self, sheet):
+    news_items = []
+    for i in range(sheet.max_row):
+      date = (
+        (
+          sheet.cell(
+            row=i + 1,
+            column=1
+          ).value
+        ) + timedelta(hours=8)
+      )
+
+      news_items.append(
+        {
+          "date": str(date.year).zfill(4) + "/" + 
+                  str(date.month).zfill(2) + "/" +
+                  str(date.day).zfill(2),
+          "url": sheet.cell(
+            row=i + 1,
+            column=2
+          ).value,
+          "text": str(
+            sheet.cell(
+              row=i + 1,
+              column=3
+            ).value
+          )
+        }
+      )
+    return news_items
+
+
+
+
 class mail_manager:
   def __init__(self, token):
     self.token = token
@@ -372,6 +406,8 @@ def __main__():
   pcr_sheet = spreadsheet['PCR検査件数']
   news_sheet = spreadsheet['最新の情報']
 
+  news = data_gen.get_news(news_sheet)
+
   patients_data = data_gen.get_patients_data(patients_sheet)
 
   patients_summary = data_gen.get_patients_summary(patients_data)
@@ -418,7 +454,13 @@ def __main__():
       f, indent=4, ensure_ascii=False
     )
 
-  
+  with open('./data/news.json', 'w') as f:
+    json.dump(
+      {
+        "newsItems": news
+      },
+      f, indent=4, ensure_ascii=False
+    )
   
 
 __main__()
