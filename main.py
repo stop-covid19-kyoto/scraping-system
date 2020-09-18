@@ -257,11 +257,11 @@ class data_generator:
           "date": str(date.year).zfill(4) + "/" + 
                   str(date.month).zfill(2) + "/" +
                   str(date.day).zfill(2),
-          "url": sheet.cell(
+          "text": sheet.cell(
             row=i + 1,
             column=2
           ).value,
-          "text": str(
+          "url": str(
             sheet.cell(
               row=i + 1,
               column=3
