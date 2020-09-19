@@ -170,34 +170,90 @@ class data_generator:
 
     return patients_summary
 
-  def get_today_inspctions_summary(self, sheet):
+  def get_today_inspections_summary(self, sheet):
+    inspected = None
+    patients = None
+    in_hospital = None
+    in_hotel = None
+    in_home = None
+    dead = None
+    left = None
+
+    for i in range(sheet.max_row):
+      if (
+        (inspected != None) and
+        (patients != None) and
+        (in_hospital != None) and
+        (in_hotel != None) and
+        (in_home != None) and
+        (dead != None) and
+        (left != None)
+      ):
+        break
+
+      inspected = (
+        sheet.cell(row=i + 1, column=2).value
+        if inspected == None 
+        else inspected
+      )
+      patients = (
+        sheet.cell(row=i + 1, column=3).value
+        if patients == None
+        else patients
+      )
+      in_hospital = (
+        sheet.cell(row=i + 1, column=5).value
+        if in_hospital == None
+        else in_hospital
+        )
+      in_hotel = (
+        sheet.cell(row=i + 1, column=7).value
+        if in_hotel == None
+        else in_hotel
+      )
+      in_home = (
+        sheet.cell(row=i + 1, column=8).value
+        if in_home == None
+        else in_home
+      )
+      dead = (
+        sheet.cell(row=i + 1, column=9).value
+        if dead == None
+        else dead
+      )
+      left = (
+        sheet.cell(row=i + 1, column=4).value
+        if left == None
+        else left
+      )
+
     return {
       "attr": "検査実施人数",
-      "value": sheet.cell(row=1, column=2).value,
+      "value": inspected if inspected != None else 0,
       "children": [
         {
           "attr": "陽性患者数",
-          "value": sheet.cell(row=1, column=3).value,
+          "value": patients if patients != None else 0,
           "children": [
             {
               "attr": "入院中・入院調整中",
-              "value": sheet.cell(row=1, column=5).value
+              "value": in_hospital if in_hospital != None else 0
             },
             {
               "attr": "宿泊施設",
-              "value": sheet.cell(row=1, column=7).value
+              "value": in_hotel if in_hotel != None else 0
             },
             {
               "attr": "自宅療養",
-              "value": sheet.cell(row=1, column=8).value
+              "value": in_home if in_home != None else 0
             },
             {
               "attr": "死亡",
-              "value": sheet.cell(row=1, column=9).value
+              "value": dead if dead != None else 0
             },
             {
               "attr": "退院・解除",
-              "value": sheet.cell(row=1, column=4).value
+              "value": left if left != None else 0
             },
           ]
         }
@@ -205,7 +261,7 @@ class data_generator:
       "last_update": None
     }
 
-  def get_inspctions_summary(self, sheet):
+  def get_inspections_summary(self, sheet):
     inspections_summary = []
     last_inspected = 0
 
@@ -288,7 +344,8 @@ class mail_manager:
     msg_list = gmailrestwrapper.get_message_list(
       self.token,
       query=(
-        # "NOT in:draft " +
+        "NOT in:draft " +
+        "has:attachment " +
         query_addresses + 
         " after:" +
         str(date.year).zfill(4) + "/" + str(date.month).zfill(2) + "/" + str(date.day).zfill(2) +
@@ -413,10 +470,10 @@ def __main__():
 
   patients_summary = data_gen.get_patients_summary(patients_data)
 
-  main_summary = data_gen.get_today_inspctions_summary(pcr_sheet)
+  main_summary = data_gen.get_today_inspections_summary(pcr_sheet)
 
-  inspections_summary = data_gen.get_inspctions_summary(pcr_sheet)
-
+  inspections_summary = data_gen.get_inspections_summary(pcr_sheet)
+  
   with open('./data/patients.json', 'w') as f:
     json.dump(
       {
@@ -446,7 +503,7 @@ def __main__():
         "last_update": last_update
       },
       f, indent=4, ensure_ascii=False)
-
+  
   with open('./data/last_update.json', 'w') as f:
     json.dump(
       {
@@ -462,6 +519,5 @@ def __main__():
       },
       f, indent=4, ensure_ascii=False
     )
-  
 
 __main__()
