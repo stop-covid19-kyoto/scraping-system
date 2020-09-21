@@ -173,21 +173,25 @@ class data_generator:
   def get_today_inspections_summary(self, sheet):
     inspected = None
     patients = None
+    illness = None
     in_hospital = None
     in_hotel = None
     in_home = None
     dead = None
     left = None
+    adjustment = None
 
     for i in range(sheet.max_row):
       if (
         (inspected != None) and
         (patients != None) and
+        (illness != None) and
         (in_hospital != None) and
         (in_hotel != None) and
         (in_home != None) and
         (dead != None) and
-        (left != None)
+        (left != None) and
+        (adjustment != None)
       ):
         break
 
@@ -200,6 +204,11 @@ class data_generator:
         sheet.cell(row=i + 1, column=3).value
         if patients == None
         else patients
+      )
+      illness = (
+        sheet.cell(row=i + 1, column=6).value
+        if illness == None
+        else illness
       )
       in_hospital = (
         sheet.cell(row=i + 1, column=5).value
@@ -226,6 +235,11 @@ class data_generator:
         if left == None
         else left
       )
+      adjustment = (
+        sheet.cell(row=i + 1, column=10).value
+        if adjustment == None
+        else adjustment
+      )
 
     return {
       "attr": "検査実施人数",
@@ -238,6 +252,10 @@ class data_generator:
             {
               "attr": "入院中・入院調整中",
               "value": in_hospital if in_hospital != None else 0
+            },
+            {
+              "attr": "重症者",
+              "value": illness if illness != None else 0
             },
             {
               "attr": "宿泊施設",
@@ -254,6 +272,10 @@ class data_generator:
             {
               "attr": "退院・解除",
               "value": left if left != None else 0
+            },
+            {
+              "attr": "調整中",
+              "value": adjustment if adjustment != None else 0
             },
           ]
         }
