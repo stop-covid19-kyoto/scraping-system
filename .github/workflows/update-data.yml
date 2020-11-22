@@ -5,6 +5,7 @@ on:
     - cron: "*/60 * * * *"
   workflow_dispatch:
   repository_dispatch:
+    types: [update-data]
 
 jobs:
   build:
