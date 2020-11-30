@@ -358,6 +358,7 @@ class mail_manager:
 
   def get_message_list(self, addresses: list, date, max_results: int):
     query_addresses = "from:"
+    before_date = date + timedelta(days=1)
     for i in range(len(addresses)):
       if i >= 1:
         query_addresses += "OR from:"
@@ -372,7 +373,7 @@ class mail_manager:
         " after:" +
         str(date.year).zfill(4) + "/" + str(date.month).zfill(2) + "/" + str(date.day).zfill(2) +
         " before:" +
-        str(date.year).zfill(4) + "/" + str(date.month).zfill(2) + "/" + str(date.day + 1).zfill(2)
+        str(before_date.year).zfill(4) + "/" + str(before_date.month).zfill(2) + "/" + str(before_date.day).zfill(2)
       ),
       maxResults=max_results
     )
@@ -427,7 +428,7 @@ def __main__():
     )
 
     last_date = None
-  
+
     if msg_list != None:
       for msg_id in msg_list:
         msg = (
