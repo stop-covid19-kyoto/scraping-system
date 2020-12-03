@@ -79,6 +79,9 @@ def __main__():
               str(date.minute).zfill(2)
             )
             break
+      else:
+        continue
+      break
   else:
     dt = dt + timedelta(days=-1)
 

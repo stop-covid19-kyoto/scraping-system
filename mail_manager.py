@@ -7,6 +7,7 @@ class mail_manager:
 
   def get_message_list(self, addresses: list, date, max_results: int):
     query_addresses = "from:"
+    date = date - timedelta(days=1)
     before_date = date + timedelta(days=1)
     for i in range(len(addresses)):
       if i >= 1:
