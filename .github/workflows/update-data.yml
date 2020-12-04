@@ -26,7 +26,7 @@ jobs:
         KYOTO_ADDR: ${{ secrets.KYOTO_ADDR }}
         MY_ADDR:  ${{ secrets.MY_ADDR }}
       run: |
-        TZ=Asia/Tokyo python main.py ${CLIENT_ID} ${CLIENT_SECRET} ${REFRESH_TOKEN} ${KYOTO_ADDR} ${MY_ADDR}
+        TZ= python main.py ${CLIENT_ID} ${CLIENT_SECRET} ${REFRESH_TOKEN} ${KYOTO_ADDR} ${MY_ADDR}
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:

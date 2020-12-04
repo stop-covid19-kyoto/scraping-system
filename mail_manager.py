@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import gmailrestwrapper
 
 class mail_manager:
@@ -7,24 +7,31 @@ class mail_manager:
 
   def get_message_list(self, addresses: list, date, max_results: int):
     query_addresses = "from:"
-    date = date - timedelta(days=1)
+
+    date = date
     before_date = date + timedelta(days=1)
+
+    date_unixtime = date.strftime('%s')
+    before_date_unixtime = before_date.strftime('%s')
+
     for i in range(len(addresses)):
       if i >= 1:
         query_addresses += "OR from:"
       query_addresses += addresses[i] + " "
 
-    msg_list = gmailrestwrapper.get_message_list(
-      self.token,
-      query=(
+    query=(
         "NOT in:draft " +
         "has:attachment " +
         query_addresses + 
         " after:" +
-        str(date.year).zfill(4) + "/" + str(date.month).zfill(2) + "/" + str(date.day).zfill(2) +
+        date_unixtime +
         " before:" +
-        str(before_date.year).zfill(4) + "/" + str(before_date.month).zfill(2) + "/" + str(before_date.day).zfill(2)
-      ),
+        before_date_unixtime
+      )
+
+    msg_list = gmailrestwrapper.get_message_list(
+      self.token,
+      query=query,
       maxResults=max_results
     )
 
@@ -39,10 +46,10 @@ class mail_manager:
     date = (
       datetime.utcfromtimestamp(
         int(int(msg["internalDate"]) / 1000)
-      ) + timedelta(hours=9)
+      )
     )
-
+    
     return {
       "data": msg,
-      "date": str(date)
+      "date": str(date + timedelta(hours=9))
     }

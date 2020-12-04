@@ -25,6 +25,8 @@ def __main__():
   mail_man = mail_manager(token)
 
   dt = datetime.now()
+  dt = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+  dt = dt - timedelta(hours=9)
 
   msg_list = mail_man.get_message_list(
     addresses=[
