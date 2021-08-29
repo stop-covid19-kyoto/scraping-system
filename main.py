@@ -22,6 +22,7 @@ def __main__():
   # トークンを生成
   token = gmailrestwrapper.get_token(param)
 
+  print("メールサーバにアクセスします")
   mail_man = mail_manager(token)
 
   dt = datetime.now()
@@ -41,6 +42,7 @@ def __main__():
 
   spread_data = None
 
+  print("メッセージを取得しています")
   if msg_list != None:
     for msg_id in msg_list:
       msg = (
@@ -96,16 +98,21 @@ def __main__():
     pcr_sheet = spreadsheet['PCR検査件数']
     news_sheet = spreadsheet['最新の情報']
 
+    print("ニュースを変換中です")
     news = data_gen.get_news(news_sheet)
 
+    print("感染者のデータを変換中です")
     patients_data = data_gen.get_patients_data(patients_sheet)
 
+    print("感染者数のサマリーを変換中です")
     patients_summary = data_gen.get_patients_summary(patients_data)
 
+    print("検査陽性者の属性データを変換中です")
     main_summary = data_gen.get_today_inspections_summary(pcr_sheet)
 
+    print("検査実施数のデータを変換中です")
     inspections_summary = data_gen.get_inspections_summary(pcr_sheet)
-  
+
     with open('./data/patients.json', 'w') as f:
       json.dump(
         {

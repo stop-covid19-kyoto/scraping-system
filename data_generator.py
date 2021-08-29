@@ -102,6 +102,8 @@ class data_generator:
         }
       )
 
+      print(f'{i + 1}件処理しました')
+
     return patients_data
 
   def get_patients_summary(self, patients):
@@ -166,7 +168,8 @@ class data_generator:
   def get_today_inspections_summary(self, sheet):
     inspected = None
     patients = None
-    illness = None
+    icu = None
+    other = None
     in_hospital = None
     in_hotel = None
     in_home = None
@@ -178,7 +181,8 @@ class data_generator:
       if (
         (inspected != None) and
         (patients != None) and
-        (illness != None) and
+        (icu != None) and
+        (other != None) and
         (in_hospital != None) and
         (in_hotel != None) and
         (in_home != None) and
@@ -188,48 +192,63 @@ class data_generator:
       ):
         break
 
+      # 検査実施人数
       inspected = (
         sheet.cell(row=i + 1, column=2).value
         if inspected == None 
         else inspected
       )
+      # 陽性者
       patients = (
         sheet.cell(row=i + 1, column=3).value
         if patients == None
         else patients
       )
-      illness = (
+      # 高度重症病床
+      icu = (
         sheet.cell(row=i + 1, column=6).value
-        if illness == None
-        else illness
+        if icu == None
+        else icu
       )
+      # その他
+      other = (
+        sheet.cell(row=i + 1, column=7).value
+        if other == None
+        else other
+      )
+      # 入院中
       in_hospital = (
         sheet.cell(row=i + 1, column=5).value
         if in_hospital == None
         else in_hospital
-        )
+      )
+      # 施設療養
       in_hotel = (
-        sheet.cell(row=i + 1, column=7).value
+        sheet.cell(row=i + 1, column=8).value
         if in_hotel == None
         else in_hotel
       )
+      # 自宅療養
       in_home = (
-        sheet.cell(row=i + 1, column=8).value
+        sheet.cell(row=i + 1, column=9).value
         if in_home == None
         else in_home
       )
+      # 死亡
       dead = (
-        sheet.cell(row=i + 1, column=9).value
+        sheet.cell(row=i + 1, column=10).value
         if dead == None
         else dead
       )
+      # 退院
       left = (
         sheet.cell(row=i + 1, column=4).value
         if left == None
         else left
       )
+      # 調整中
       adjustment = (
-        sheet.cell(row=i + 1, column=10).value
+        sheet.cell(row=i + 1, column=11).value
         if adjustment == None
         else adjustment
       )
@@ -247,8 +266,12 @@ class data_generator:
               "value": in_hospital if in_hospital != None else 0
             },
             {
-              "attr": "重症者",
-              "value": illness if illness != None else 0
+              "attr": "高度重症病床",
+              "value": icu if icu != None else 0
+            },
+            {
+              "attr": "その他",
+              "value": other if other != None else 0
             },
             {
               "attr": "宿泊施設",
