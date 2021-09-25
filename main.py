@@ -27,7 +27,7 @@ def __main__():
 
   dt = datetime.now()
   dt = dt.replace(hour=0, minute=0, second=0, microsecond=0)
-  dt = dt - timedelta(hours=9)
+  # dt = dt + timedelta(hours=9)
 
   msg_list = mail_man.get_message_list(
     addresses=[
