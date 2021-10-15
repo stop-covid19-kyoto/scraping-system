@@ -33,4 +33,5 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./data
         publish_branch: gh-pages
-        allow_empty_commit: true
+        allow_empty_commit: false
+
